@@ -1,0 +1,29 @@
+body {
+  width: 500px;
+  margin: 0 auto;
+}
+
+@media screen and (max-width: 500px) {
+  body {
+    width: 100%;
+  }
+}
+
+textarea {
+  height: 50px;
+  width: 100%;
+}
+
+#videos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1em;
+  width: 100%;
+  padding: 10px;
+}
+
+video {
+  width: 100%;
+  border: 2px solid greenyellow;
+  background-color: rgb(63, 62, 62);
+}
