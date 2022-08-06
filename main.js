@@ -1,5 +1,10 @@
+/** @type {MediaStream} */
 let localStream;
+
+/** @type {MediaStream} */
 let remoteStream;
+
+/** @type {RTCPeerConnection} */
 let peerConnection;
 
 // STUN servers
@@ -25,6 +30,10 @@ let createOffer = async () => {
   peerConnection = new RTCPeerConnection(configuration); // source of truth for this connection
   remoteStream = new MediaStream();
   document.getElementById("user-2").srcObject = remoteStream;
+
+  localStream.getTracks().forEach((track) => {
+    peerConnection.addTrack(track, localStream);
+  });
 
   let offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer);
