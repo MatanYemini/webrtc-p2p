@@ -16,7 +16,7 @@ const configuration = {
   ],
 };
 
-let init = async () => {
+const init = async () => {
   localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: false,
@@ -25,8 +25,49 @@ let init = async () => {
   document.getElementById("user-1").srcObject = localStream;
 };
 
-let createOffer = async () => {
-  // The peer connection gets the servers he needs to communicate with in order to generate our ice candidates
+const createOffer = async () => {
+  await createPeerConnection("offer-sdp");
+
+  // after offer is created - request for stun servers will be emitted
+  // after the request is made, our ice candidates are being created
+
+  let offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+
+  document.getElementById("offer-sdp").value = JSON.stringify(offer);
+};
+
+const createAnswer = async () => {
+  await createPeerConnection("answer-sdp");
+
+  let offer = document.getElementById("offer-sdp").value;
+
+  if (!offer) {
+    return alert("Receive offer from peer before!");
+  }
+
+  offer = JSON.parse(offer);
+  await peerConnection.setRemoteDescription(offer);
+
+  let answer = await peerConnection.createAnswer();
+  await peerConnection.setLocalDescription(answer);
+
+  document.getElementById("answer-sdp").value = JSON.stringify(answer);
+};
+
+const addAnswer = async () => {
+  let answer = document.getElementById("answer-sdp").value;
+  if (!answer) {
+    return alert("Retrieve answer from peer failed");
+  }
+  answer = JSON.parse(answer);
+
+  if (!peerConnection.currentRemoteDescription) {
+    peerConnection.setRemoteDescription(answer);
+  }
+};
+
+const createPeerConnection = async (sdpType) => {
   peerConnection = new RTCPeerConnection(configuration); // source of truth for this connection
   remoteStream = new MediaStream();
   document.getElementById("user-2").srcObject = remoteStream;
@@ -35,12 +76,25 @@ let createOffer = async () => {
     peerConnection.addTrack(track, localStream);
   });
 
-  let offer = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offer);
+  peerConnection.ontrack = async (event) => {
+    event.streams[0].getTracks().forEach((track) => {
+      remoteStream.addTrack(track);
+    });
+  };
 
-  document.getElementById("offer-sdp").value = JSON.stringify(offer);
+  // will be called each time we have ice candidate created
+  peerConnection.onicecandidate = async (event) => {
+    if (event.candidate) {
+      // Each time we get a new candidate, the offer will be updated
+      document.getElementById(sdpType).value = JSON.stringify(
+        peerConnection.localDescription
+      );
+    }
+  };
 };
 
 init();
 
 document.getElementById("create-offer").onclick = createOffer;
+document.getElementById("create-answer").onclick = createAnswer;
+document.getElementById("add-answer").onclick = addAnswer;
